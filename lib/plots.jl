@@ -33,8 +33,8 @@ end
 function plot_potential(x, potential)
 	subplot(222)
 	xlabel("x")
-	ylabel("psi")
-	title("Kantorovich potential")
+	ylabel("u")
+	title("Convex potential u(x)")
 	plot(x,potential,"r.", linewidth=1)
 end
 

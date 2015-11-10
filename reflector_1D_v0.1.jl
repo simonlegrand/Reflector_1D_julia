@@ -9,13 +9,14 @@ reload("./lib/lib.jl")
 reload("./lib/rayTracing.jl")
 
 #### Marginals definition ####
-function source_density(x)	
+# Source density
+function M(x)	
 	source = exp(-x.*x)
 	return source
 end
 
-
-function target_plane_density{T<:Real}(xi::Array{T})
+# Target_plane_density
+function L{T<:Real}(xi::Array{T})
 	target = ones(xi)
 	for i = 1:length(xi)
 		target[i] = 0.5*exp(-10*(xi[i]-1.5)*(xi[i]-1.5)) + exp(-(xi[i]+1.5)*(xi[i]+1.5))
@@ -29,29 +30,29 @@ LP = false # Linear programmation resolution
 
 
 #### Parameters ####
-Nx = 100
+Nx = 1000
 source_box = [-2. 2.]
 x_range = linrange(source_box[1],source_box[2],Nx)
 x = [x_range]
-Np = 200
+Np = 2000
 target_plane_box = [-4. 4.]
 e_xi = [0. 1.]
 n_plan = [-20. 0.]
 target_plane_base = [e_xi;n_plan]
 # For plot
 xi = linspace(target_plane_box[1], target_plane_box[2], Np)
-tar_plane_dens = target_plane_density(xi)
+tar_plane_dens = L(xi)
 tar_plane_dens ./= sum(tar_plane_dens) 
 
 #### Boundaries of the p domain ####
 (pmin,pmax) = geometry.planar_to_gradient_boundaries(
 						target_plane_box,target_plane_base)
 p = linspace(pmin,pmax,Np)
-g = geometry.density_change_variable(p,target_plane_base,target_plane_density)
+g = geometry.density_change_variable(p,target_plane_base,L)
 
 
 # Marginals
-mu = source_density(x)
+mu = M(x)
 mu ./= sum(mu)
 nu = g
 nu ./= sum(nu)
@@ -65,6 +66,7 @@ if I
 	Gamma,a,b = libIPFP.solve_IPFP(mu,nu,C,epsilon)
 	phi = epsilon*log(b)
 	psi = epsilon*log(a)
+	u = 0.5*x.*x - phi
 	println("OT resolution")
 	toc()
 	plots.plot_everything(x,mu,xi,tar_plane_dens,u,Gamma)
@@ -91,8 +93,8 @@ der_interpol = lib.interpolation_1d(x_range, grad_u)
 
 #### Ray tracing ####
 s1 = [0. 1.]
-M = rayTracing.ray_tracer(s1,source_density, source_box, target_plane_box, der_interpol, target_plane_base, 10)
-x = linspace(target_plane_box[1],target_plane_box[2],size(M)[1])
+resim = rayTracing.ray_tracer(s1,M, source_box, target_plane_box, der_interpol, target_plane_base, 10)
+x = linspace(target_plane_box[1],target_plane_box[2],size(resim)[1])
 subplot(224)
-plot(x, M, "b-", ms=2)
+plot(x, resim, "b-", ms=2)
 
